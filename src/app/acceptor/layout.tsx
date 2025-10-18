@@ -19,6 +19,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarProvider,
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
@@ -40,7 +41,7 @@ export default function AcceptorLayout({ children }: { children: React.ReactNode
   const avatar = PlaceHolderImages.find((img) => img.id === acceptorProfile.avatarId);
 
   return (
-    <>
+    <SidebarProvider>
       <Sidebar>
         <SidebarHeader>
           <Logo />
@@ -83,6 +84,6 @@ export default function AcceptorLayout({ children }: { children: React.ReactNode
       <SidebarInset>
         <div className="p-4 sm:p-6 lg:p-8">{children}</div>
       </SidebarInset>
-    </>
+    </SidebarProvider>
   );
 }
