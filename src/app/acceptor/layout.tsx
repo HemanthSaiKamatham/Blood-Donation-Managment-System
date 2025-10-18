@@ -19,7 +19,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarMenuSeparator,
+  SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 
@@ -62,7 +62,7 @@ export default function AcceptorLayout({ children }: { children: React.ReactNode
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter className='gap-4'>
-            <SidebarMenuSeparator />
+            <SidebarSeparator />
              <div className="flex items-center gap-3 px-2">
                 <Avatar className="h-10 w-10">
                     {avatar && <AvatarImage src={avatar.imageUrl} alt={acceptorProfile.name} data-ai-hint={avatar.imageHint} />}
