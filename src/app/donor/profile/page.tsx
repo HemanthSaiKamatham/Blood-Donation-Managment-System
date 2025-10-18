@@ -43,6 +43,7 @@ export default function DonorProfilePage() {
 
   const donorDocRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
+    // This creates a document with the user's UID as the ID in the 'donors' collection
     return doc(firestore, `donors/${user.uid}`);
   }, [firestore, user]);
   const { data: donorProfile, isLoading: isDonorLoading } = useDoc(donorDocRef);
@@ -53,19 +54,19 @@ export default function DonorProfilePage() {
     if (donorProfile) {
       setProfile(donorProfile);
     } else if (user) {
+        // If there's no profile in Firestore, pre-fill with auth email
         setProfile({ ...defaultProfile, email: user.email || '' });
     }
   }, [donorProfile, user]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (!donorDocRef) return;
+    if (!donorDocRef || !user) return;
     
-    // Ensure we have an ID for new profiles
     const profileToSave = {
         ...profile,
-        id: user?.uid,
-        email: user?.email, // Ensure email is always from auth
+        id: user.uid, // Ensure the doc has an id field matching the user
+        email: user.email, // Always use the authenticated email
     };
 
     setDocumentNonBlocking(donorDocRef, profileToSave, { merge: true });
@@ -151,7 +152,7 @@ export default function DonorProfilePage() {
                      <div className="space-y-2">
                         <Label htmlFor="last-donation">Last Donation Date</Label>
                         <Input id="last-donation" type="date" value={profile.lastDonationDate}
-                         onChange={(e) => setProfile({ ...profile, lastDonationDate: e.-target.value })} />
+                         onChange={(e) => setProfile({ ...profile, lastDonationDate: e.target.value })} />
                     </div>
                   </div>
                 </CardContent>
