@@ -1,22 +1,38 @@
+'use client';
 import Link from 'next/link';
 import PageHeader from '@/components/shared/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { bloodRequests } from '@/lib/data';
 import { CheckCircle2, AlertCircle, Hourglass } from 'lucide-react';
+import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
+import { collection, query, where } from 'firebase/firestore';
 
-const statusConfig = {
+const statusConfig: { [key: string]: { icon: React.ElementType, color: string } } = {
     Pending: { icon: Hourglass, color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20' },
     Accepted: { icon: CheckCircle2, color: 'bg-blue-500/10 text-blue-500 border-blue-500/20' },
     Fulfilled: { icon: CheckCircle2, color: 'bg-green-500/10 text-green-500 border-green-500/20' }
 };
 
 export default function AcceptorDashboardPage() {
-    const pendingRequests = bloodRequests.filter(r => r.status === 'Pending').length;
-    const fulfilledRequests = bloodRequests.filter(r => r.status === 'Fulfilled').length;
-    const totalRequests = bloodRequests.length;
+    const { user } = useUser();
+    const firestore = useFirestore();
+
+    const requestsQuery = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return query(collection(firestore, 'bloodRequests'), where('acceptorId', '==', user.uid));
+    }, [firestore, user]);
+    
+    const { data: bloodRequests, isLoading } = useCollection(requestsQuery);
+
+    const pendingRequests = bloodRequests?.filter(r => r.status === 'Pending').length || 0;
+    const fulfilledRequests = bloodRequests?.filter(r => r.status === 'Fulfilled').length || 0;
+    const totalRequests = bloodRequests?.length || 0;
+
+    if (isLoading) {
+        return <div>Loading dashboard...</div>;
+    }
 
     return (
         <div className="flex flex-col gap-8">
@@ -80,16 +96,16 @@ export default function AcceptorDashboardPage() {
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {bloodRequests.slice(0, 5).map(req => {
+                                {bloodRequests?.slice(0, 5).map(req => {
                                     const statusInfo = statusConfig[req.status as keyof typeof statusConfig] || statusConfig.Pending;
                                     return (
                                         <TableRow key={req.id}>
-                                            <TableCell className="font-bold text-primary">{req.bloodType}</TableCell>
-                                            <TableCell>{req.units}</TableCell>
+                                            <TableCell className="font-bold text-primary">{req.bloodGroup}</TableCell>
+                                            <TableCell>{req.unitsRequired}</TableCell>
                                             <TableCell>
                                                 <Badge variant={req.urgency === 'High' ? 'destructive' : 'secondary'}>{req.urgency}</Badge>
                                             </TableCell>
-                                            <TableCell>{req.date}</TableCell>
+                                            <TableCell>{new Date(req.requestDate).toLocaleDateString()}</TableCell>
                                             <TableCell className="text-right">
                                                  <Badge className={`capitalize ${statusInfo.color}`}>{req.status}</Badge>
                                             </TableCell>

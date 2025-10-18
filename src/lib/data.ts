@@ -1,3 +1,5 @@
+// This file contains mock data. It's recommended to remove this file
+// and fetch data from a real backend service.
 export const donorProfile = {
   name: 'Alex Doe',
   email: 'alex.doe@example.com',

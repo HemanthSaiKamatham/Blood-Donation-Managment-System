@@ -6,30 +6,37 @@ import PageHeader from '@/components/shared/page-header';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { donorProfile } from '@/lib/data';
+import { useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 import { AlertTriangle, Info, Loader2 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-
-const mockRequests = [
-    { bloodType: 'O+', urgency: 'High', unitsRequired: 2, donorAvailability: true },
-    { bloodType: 'A-', urgency: 'Medium', unitsRequired: 1, donorAvailability: true },
-    { bloodType: 'B+', urgency: 'Low', unitsRequired: 3, donorAvailability: true },
-];
+import { doc } from 'firebase/firestore';
 
 export default function NotificationsPage() {
     const { toast } = useToast();
     const [loading, setLoading] = useState(false);
     const [notification, setNotification] = useState<SmartNotificationsForMatchingRequestsOutput | null>(null);
 
+    const { user } = useUser();
+    const firestore = useFirestore();
+    const donorDocRef = useMemoFirebase(() => {
+        if (!user || !firestore) return null;
+        return doc(firestore, `donors/${user.uid}`);
+    }, [firestore, user]);
+    const { data: donorProfile } = useDoc(donorDocRef);
+
     const handleGenerateNotification = async () => {
+        if (!donorProfile) {
+            toast({ title: 'Profile not loaded', description: 'Please wait for your profile to load.', variant: 'destructive' });
+            return;
+        }
         setLoading(true);
         setNotification(null);
         try {
             const input = {
-                bloodType: donorProfile.bloodType,
+                bloodType: donorProfile.bloodGroup,
                 urgency: 'High',
                 unitsRequired: 2,
-                donorAvailability: donorProfile.isAvailable,
+                donorAvailability: donorProfile.availability,
             };
             const result = await smartNotificationsForMatchingRequests(input);
             setNotification(result);
@@ -54,9 +61,9 @@ export default function NotificationsPage() {
             <PageHeader
                 title="Notifications"
                 description="Urgent requests and updates matching your profile."
-                action={<Button onClick={handleGenerateNotification} disabled={loading}>
+                action={<Button onClick={handleGenerateNotification} disabled={loading || !donorProfile}>
                     {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-                    Generate Smart Alert
+                    Check for Urgent Alerts
                 </Button>}
             />
 

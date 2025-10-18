@@ -2,6 +2,7 @@
 
 import { Award, HeartPulse, Star, Users, Zap } from 'lucide-react';
 import type { Icon } from 'lucide-react';
+import { collection, doc } from 'firebase/firestore';
 
 import {
   Card,
@@ -17,44 +18,42 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  ChartConfig,
-} from '@/components/ui/chart';
-import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts';
 
 import PageHeader from '@/components/shared/page-header';
-import { achievements, donationHistory, donorProfile } from '@/lib/data';
+import { achievements } from '@/lib/data';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
-
-const chartData = [
-  { month: 'Jan', donations: 186 },
-  { month: 'Feb', donations: 305 },
-  { month: 'Mar', donations: 237 },
-  { month: 'Apr', donations: 273 },
-  { month: 'May', donations: 209 },
-  { month: 'Jun', donations: 214 },
-];
-
-const chartConfig = {
-  donations: {
-    label: 'Donations',
-    color: 'hsl(var(--primary))',
-  },
-} satisfies ChartConfig;
-
+import { useCollection, useDoc, useFirestore, useMemoFirebase, useUser } from '@/firebase';
 
 const iconMap: { [key: string]: Icon } = { Award, Star, Zap, HeartPulse, Users };
 
 export default function DonorDashboardPage() {
+  const { user } = useUser();
+  const firestore = useFirestore();
+
+  const donorDocRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return doc(firestore, `donors/${user.uid}`);
+  }, [firestore, user]);
+  const { data: donorProfile, isLoading: isDonorLoading } = useDoc(donorDocRef);
+  
+  const donationsColRef = useMemoFirebase(() => {
+    if (!user || !firestore) return null;
+    return collection(firestore, `donors/${user.uid}/donations`);
+  }, [firestore, user]);
+  const { data: donationHistory, isLoading: isDonationsLoading } = useCollection(donationsColRef);
+
+  if (isDonorLoading || isDonationsLoading) {
+    return <div>Loading dashboard...</div>;
+  }
+  
+  const profile = donorProfile || { name: 'Donor', contributionScore: 0, donorLevel: 'Newbie', donationStreak: 0 };
+
+
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Dashboard"
-        description={`Welcome back, ${donorProfile.name}! Here's your impact.`}
+        description={`Welcome back, ${profile.name}! Here's your impact.`}
       />
       <main className="grid gap-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -64,7 +63,7 @@ export default function DonorDashboardPage() {
             </CardHeader>
             <CardContent>
               <p className="text-4xl font-bold text-primary">
-                {donorProfile.contributionScore.toLocaleString()}
+                {profile.contributionScore.toLocaleString()}
               </p>
               <p className="text-sm text-muted-foreground">Points</p>
             </CardContent>
@@ -75,7 +74,7 @@ export default function DonorDashboardPage() {
             </CardHeader>
             <CardContent>
               <p className="text-4xl font-bold text-primary">
-                {donorProfile.donorLevel}
+                {profile.donorLevel}
               </p>
               <p className="text-sm text-muted-foreground">Keep it up!</p>
             </CardContent>
@@ -86,7 +85,7 @@ export default function DonorDashboardPage() {
             </CardHeader>
             <CardContent>
               <p className="text-4xl font-bold text-primary">
-                {donorProfile.donationStreak}
+                {profile.donationStreak || 0}
               </p>
               <p className="text-sm text-muted-foreground">Consecutive Donations</p>
             </CardContent>
@@ -104,16 +103,16 @@ export default function DonorDashboardPage() {
                   <TableRow>
                     <TableHead>Date</TableHead>
                     <TableHead>Location</TableHead>
-                    <TableHead className="text-right">Status</TableHead>
+                    <TableHead className="text-right">Units</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {donationHistory.slice(0, 5).map((donation) => (
+                  {donationHistory?.slice(0, 5).map((donation) => (
                     <TableRow key={donation.id}>
-                      <TableCell>{donation.date}</TableCell>
-                      <TableCell>{donation.location}</TableCell>
+                      <TableCell>{new Date(donation.donationDate).toLocaleDateString()}</TableCell>
+                      <TableCell>{donation.donationCenter}</TableCell>
                       <TableCell className="text-right">
-                        <Badge variant="secondary">{donation.status}</Badge>
+                        <Badge variant="secondary">{donation.unitsDonated}</Badge>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -139,37 +138,6 @@ export default function DonorDashboardPage() {
             </CardContent>
           </Card>
         </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Donation Trends</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ChartContainer config={chartConfig} className="h-[250px] w-full">
-              <BarChart accessibilityLayer data={chartData}>
-                <CartesianGrid vertical={false} />
-                <XAxis
-                  dataKey="month"
-                  tickLine={false}
-                  tickMargin={10}
-                  axisLine={false}
-                />
-                 <YAxis
-                    tickLine={false}
-                    axisLine={false}
-                    tickMargin={10}
-                    allowDecimals={false}
-                />
-                <ChartTooltip
-                  cursor={false}
-                  content={<ChartTooltipContent />}
-                />
-                <Bar dataKey="donations" fill="var(--color-donations)" radius={8} />
-              </BarChart>
-            </ChartContainer>
-          </CardContent>
-        </Card>
-
       </main>
     </div>
   );

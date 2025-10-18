@@ -17,9 +17,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Loader2, Users } from 'lucide-react';
+import { useFirestore, useUser, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
 
 const requestSchema = z.object({
-  bloodType: z.string().min(1, 'Blood type is required'),
+  bloodGroup: z.string().min(1, 'Blood type is required'),
   unitsRequired: z.coerce.number().min(1, 'At least 1 unit is required'),
   urgency: z.string().min(1, 'Urgency level is required'),
   location: z.string().min(1, 'Location is required'),
@@ -34,10 +36,13 @@ export default function SubmitRequestPage() {
   const [showFulfillment, setShowFulfillment] = useState(false);
   const [fulfillmentResult, setFulfillmentResult] = useState<AIPoweredRequestFulfillmentOutput | null>(null);
 
+  const { user } = useUser();
+  const firestore = useFirestore();
+
   const form = useForm<RequestFormValues>({
     resolver: zodResolver(requestSchema),
     defaultValues: {
-      bloodType: '',
+      bloodGroup: '',
       unitsRequired: 1,
       urgency: 'Medium',
       location: 'City General Hospital',
@@ -46,11 +51,29 @@ export default function SubmitRequestPage() {
   });
 
   const onSubmit: SubmitHandler<RequestFormValues> = async (data) => {
+    if (!user || !firestore) {
+        toast({ title: 'Not Authenticated or Firebase not available', description: 'You must be logged in to submit a request.', variant: 'destructive' });
+        return;
+    }
     setLoading(true);
+
+    const newRequest = {
+        ...data,
+        acceptorId: user.uid,
+        status: 'Pending',
+        requestDate: new Date().toISOString(),
+    };
+
     try {
+        const requestsCollection = collection(firestore, 'bloodRequests');
+        addDocumentNonBlocking(requestsCollection, newRequest);
+
         const aiInput = {
-            ...data,
+            bloodType: data.bloodGroup,
+            unitsRequired: data.unitsRequired,
+            urgency: data.urgency,
             donorAvailability: 'Find all available donors',
+            requestDetails: data.requestDetails || '',
         };
         const result = await aiPoweredRequestFulfillment(aiInput);
         setFulfillmentResult(result);
@@ -63,8 +86,8 @@ export default function SubmitRequestPage() {
     } catch (error) {
         console.error(error);
         toast({
-            title: 'AI Fulfillment Failed',
-            description: 'Could not match donors for this request.',
+            title: 'Submission Failed',
+            description: 'Could not submit request or perform AI analysis.',
             variant: 'destructive',
         });
     } finally {
@@ -88,7 +111,7 @@ export default function SubmitRequestPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <FormField
                             control={form.control}
-                            name="bloodType"
+                            name="bloodGroup"
                             render={({ field }) => (
                                 <FormItem>
                                     <FormLabel>Blood Type</FormLabel>

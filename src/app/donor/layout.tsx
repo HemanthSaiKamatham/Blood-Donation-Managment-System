@@ -7,7 +7,7 @@ import {
   User,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import Logo from '@/components/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -24,7 +24,7 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
-import { donorProfile } from '@/lib/data';
+import { useAuth, useUser } from '@/firebase';
 
 const navItems = [
   { href: '/donor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -36,6 +36,18 @@ const navItems = [
 export default function DonorLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const avatar = PlaceHolderImages.find((img) => img.id === 'user-avatar-1');
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+  const router = useRouter();
+
+  if(isUserLoading) {
+    return <div>Loading...</div>
+  }
+
+  if (!user && !isUserLoading) {
+    router.push('/login');
+    return null;
+  }
 
   return (
     <SidebarProvider>
@@ -49,7 +61,7 @@ export default function DonorLayout({ children }: { children: React.ReactNode })
               <SidebarMenuItem key={item.label}>
                 <Link href={item.href} legacyBehavior passHref>
                   <SidebarMenuButton
-                    isActive={pathname === item.href}
+                    isActive={pathname.startsWith(item.href)}
                     icon={<item.icon />}
                   >
                     {item.label}
@@ -63,19 +75,17 @@ export default function DonorLayout({ children }: { children: React.ReactNode })
             <SidebarSeparator />
              <div className="flex items-center gap-3 px-2">
                 <Avatar className="h-10 w-10">
-                    {avatar && <AvatarImage src={avatar.imageUrl} alt={donorProfile.name} data-ai-hint={avatar.imageHint} />}
-                    <AvatarFallback>{donorProfile.name.charAt(0)}</AvatarFallback>
+                    {avatar && <AvatarImage src={avatar.imageUrl} alt={user?.displayName || ''} data-ai-hint={avatar.imageHint} />}
+                    <AvatarFallback>{user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div className="flex flex-col">
-                    <span className="font-semibold text-sm text-foreground">{donorProfile.name}</span>
-                    <span className="text-xs text-muted-foreground">{donorProfile.email}</span>
+                    <span className="font-semibold text-sm text-foreground">{user?.displayName || 'Donor'}</span>
+                    <span className="text-xs text-muted-foreground">{user?.email}</span>
                 </div>
             </div>
-            <Link href="/login" legacyBehavior passHref>
-                <SidebarMenuButton icon={<LogOut />}>
-                    Logout
-                </SidebarMenuButton>
-            </Link>
+            <SidebarMenuButton icon={<LogOut />} onClick={() => auth.signOut()}>
+                Logout
+            </SidebarMenuButton>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>

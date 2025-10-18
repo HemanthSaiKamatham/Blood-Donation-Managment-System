@@ -1,14 +1,40 @@
+'use client';
+import { useState } from 'react';
 import PageHeader from '@/components/shared/page-header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
-import { campaigns } from '@/lib/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { useCollection, useFirestore, addDocumentNonBlocking } from '@/firebase';
+import { collection } from 'firebase/firestore';
+import { useToast } from '@/hooks/use-toast';
 
 export default function CampaignsPage() {
+    const firestore = useFirestore();
+    const { toast } = useToast();
+    
+    const campaignsCollection = useMemoFirebase(() => firestore ? collection(firestore, 'campaigns') : null, [firestore]);
+    const { data: campaigns, isLoading } = useCollection(campaignsCollection);
+
+    const [newCampaign, setNewCampaign] = useState({ name: '', startDate: '', endDate: '', description: '' });
+
+    const handleCreateCampaign = () => {
+        if (newCampaign.name && newCampaign.startDate && newCampaign.endDate && campaignsCollection) {
+            addDocumentNonBlocking(campaignsCollection, { ...newCampaign, status: 'Active', donations: 0 });
+            setNewCampaign({ name: '', startDate: '', endDate: '', description: '' });
+            toast({ title: 'Campaign Scheduled!', description: `${newCampaign.name} has been added.` });
+        } else {
+            toast({ title: 'Error', description: 'Please fill out all required fields.', variant: 'destructive' });
+        }
+    };
+    
+    if (isLoading) {
+        return <div>Loading campaigns...</div>;
+    }
+
     return (
         <div className="flex flex-col gap-8">
             <PageHeader
@@ -34,7 +60,7 @@ export default function CampaignsPage() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {campaigns.map(c => (
+                                    {campaigns?.map(c => (
                                         <TableRow key={c.id}>
                                             <TableCell className="font-medium">{c.name}</TableCell>
                                             <TableCell>{c.startDate}</TableCell>
@@ -42,7 +68,7 @@ export default function CampaignsPage() {
                                             <TableCell>
                                                 <Badge variant={c.status === 'Active' ? 'default' : 'secondary'}>{c.status}</Badge>
                                             </TableCell>
-                                            <TableCell className="text-right font-semibold text-primary">{c.donations}</TableCell>
+                                            <TableCell className="text-right font-semibold text-primary">{c.donations || 0}</TableCell>
                                         </TableRow>
                                     ))}
                                 </TableBody>
@@ -59,25 +85,25 @@ export default function CampaignsPage() {
                         <CardContent className="space-y-4">
                             <div className="space-y-2">
                                 <Label htmlFor="campaign-name">Campaign Name</Label>
-                                <Input id="campaign-name" placeholder="e.g., Winter Holiday Drive" />
+                                <Input id="campaign-name" placeholder="e.g., Winter Holiday Drive" value={newCampaign.name} onChange={(e) => setNewCampaign({ ...newCampaign, name: e.target.value })} />
                             </div>
                              <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
                                     <Label htmlFor="start-date">Start Date</Label>
-                                    <Input id="start-date" type="date" />
+                                    <Input id="start-date" type="date" value={newCampaign.startDate} onChange={(e) => setNewCampaign({ ...newCampaign, startDate: e.target.value })}/>
                                 </div>
                                 <div className="space-y-2">
                                     <Label htmlFor="end-date">End Date</Label>
-                                    <Input id="end-date" type="date" />
+                                    <Input id="end-date" type="date" value={newCampaign.endDate} onChange={(e) => setNewCampaign({ ...newCampaign, endDate: e.target.value })}/>
                                 </div>
                              </div>
                             <div className="space-y-2">
                                 <Label htmlFor="description">Description & Target</Label>
-                                <Textarea id="description" placeholder="Describe the campaign goals and target audience..." />
+                                <Textarea id="description" placeholder="Describe the campaign goals and target audience..." value={newCampaign.description} onChange={(e) => setNewCampaign({ ...newCampaign, description: e.target.value })}/>
                             </div>
                         </CardContent>
                         <CardFooter>
-                            <Button className="w-full">Schedule Campaign</Button>
+                            <Button className="w-full" onClick={handleCreateCampaign}>Schedule Campaign</Button>
                         </CardFooter>
                     </Card>
                 </div>

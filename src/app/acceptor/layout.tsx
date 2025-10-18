@@ -6,7 +6,7 @@ import {
   Send,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import Logo from '@/components/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -23,6 +23,7 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useAuth, useUser } from '@/firebase';
 
 const navItems = [
   { href: '/acceptor/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -30,15 +31,26 @@ const navItems = [
   { href: '/acceptor/manage', icon: HeartHandshake, label: 'Manage Requests' },
 ];
 
-const acceptorProfile = {
-  name: 'City General Hospital',
-  email: 'requests@cgh.org',
-  avatarId: 'user-avatar-2'
-};
-
 export default function AcceptorLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
+  
+  const acceptorProfile = {
+    name: 'City General Hospital', // This could be fetched from Firestore
+    avatarId: 'user-avatar-2'
+  };
   const avatar = PlaceHolderImages.find((img) => img.id === acceptorProfile.avatarId);
+
+  if (isUserLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user && !isUserLoading) {
+    router.push('/login');
+    return null;
+  }
 
   return (
     <SidebarProvider>
@@ -71,14 +83,12 @@ export default function AcceptorLayout({ children }: { children: React.ReactNode
                 </Avatar>
                 <div className="flex flex-col">
                     <span className="font-semibold text-sm text-foreground">{acceptorProfile.name}</span>
-                    <span className="text-xs text-muted-foreground">{acceptorProfile.email}</span>
+                    <span className="text-xs text-muted-foreground">{user?.email}</span>
                 </div>
             </div>
-            <Link href="/login" legacyBehavior passHref>
-                <SidebarMenuButton icon={<LogOut />}>
-                    Logout
-                </SidebarMenuButton>
-            </Link>
+            <SidebarMenuButton icon={<LogOut />} onClick={() => auth.signOut()}>
+                Logout
+            </SidebarMenuButton>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>

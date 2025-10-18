@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
 import Logo from '@/components/logo';
@@ -10,22 +9,48 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useAuth, useUser } from '@/firebase';
+import { initiateEmailSignIn } from '@/firebase/non-blocking-login';
+import { useEffect } from 'react';
 
 export default function LoginPage() {
   const router = useRouter();
   const loginBg = PlaceHolderImages.find(img => img.id === 'login-bg');
+  const auth = useAuth();
+  const { user, isUserLoading } = useUser();
+
+  useEffect(() => {
+    if (user && !isUserLoading) {
+        // This is a simple role detection. In a real app, you'd use custom claims.
+        if (user.email?.startsWith('donor')) {
+            router.push('/donor/dashboard');
+        } else if (user.email?.startsWith('hospital')) {
+            router.push('/acceptor/dashboard');
+        } else if (user.email?.startsWith('admin')) {
+            router.push('/admin/dashboard');
+        }
+    }
+  }, [user, isUserLoading, router]);
 
   const handleLogin = (role: 'donor' | 'acceptor' | 'admin') => {
-    // In a real app, you'd handle authentication here.
-    // For this prototype, we'll just navigate to the respective dashboard.
+    let email = '';
     if (role === 'donor') {
-      router.push('/donor/dashboard');
-    } else if (role === 'acceptor') {
-      router.push('/acceptor/dashboard');
-    } else {
-      router.push('/admin/dashboard');
+        email = (document.getElementById('donor-email') as HTMLInputElement).value;
+    } else if (role === 'acceptor' || role === 'admin') {
+        email = (document.getElementById('acceptor-email') as HTMLInputElement).value;
     }
+    const password = 'password'; // Assuming 'password' for all test users.
+    initiateEmailSignIn(auth, email, password);
   };
+  
+  if (isUserLoading || user) {
+    return (
+        <div className="flex min-h-screen w-full items-center justify-center">
+            <p>Loading...</p>
+        </div>
+    )
+  }
+
 
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center p-4">
@@ -68,7 +93,7 @@ export default function LoginPage() {
               </form>
             </TabsContent>
             <TabsContent value="acceptor" className="mt-4">
-              <form onSubmit={(e) => { e.preventDefault(); handleLogin('acceptor'); }} className="space-y-4">
+              <form className="space-y-4">
                  <div className="space-y-2">
                   <Label htmlFor="acceptor-email">Email</Label>
                   <Input id="acceptor-email" type="email" placeholder="hospital@example.com" required defaultValue="hospital@example.com" />
@@ -78,10 +103,10 @@ export default function LoginPage() {
                   <Input id="acceptor-password" type="password" required defaultValue="password" />
                 </div>
                 <div className="flex gap-2">
-                  <Button type="submit" className="w-full glow-accent" variant="secondary">
+                  <Button onClick={() => handleLogin('acceptor')} type="button" className="w-full glow-accent" variant="secondary">
                     Sign in as Acceptor
                   </Button>
-                   <Button onClick={() => handleLogin('admin')} className="w-full" variant="outline">
+                   <Button onClick={() => handleLogin('admin')} type="button" className="w-full" variant="outline">
                     Sign in as Admin
                   </Button>
                 </div>

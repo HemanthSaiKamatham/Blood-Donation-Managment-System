@@ -5,7 +5,7 @@ import {
   Megaphone,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import Logo from '@/components/logo';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -22,6 +22,7 @@ import {
   SidebarSeparator,
 } from '@/components/ui/sidebar';
 import { PlaceHolderImages } from '@/lib/placeholder-images';
+import { useAuth, useUser } from '@/firebase';
 
 const navItems = [
   { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Analytics' },
@@ -30,13 +31,25 @@ const navItems = [
 
 const adminProfile = {
   name: 'Admin User',
-  email: 'admin@idonate.com',
   avatarId: 'user-avatar-3'
 };
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const { user, isUserLoading } = useUser();
+  const auth = useAuth();
+  const router = useRouter();
   const avatar = PlaceHolderImages.find((img) => img.id === adminProfile.avatarId);
+  
+  if (isUserLoading) {
+    return <div>Loading...</div>;
+  }
+
+  if (!user && !isUserLoading) {
+    router.push('/login');
+    return null;
+  }
+
 
   return (
     <SidebarProvider>
@@ -70,14 +83,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </Avatar>
                 <div className="flex flex-col">
                     <span className="font-semibold text-sm text-foreground">{adminProfile.name}</span>
-                    <span className="text-xs text-muted-foreground">{adminProfile.email}</span>
+                    <span className="text-xs text-muted-foreground">{user?.email}</span>
                 </div>
             </div>
-            <Link href="/login" legacyBehavior passHref>
-                <SidebarMenuButton icon={<LogOut />}>
-                    Logout
-                </SidebarMenuButton>
-            </Link>
+            <SidebarMenuButton icon={<LogOut />} onClick={() => auth.signOut()}>
+                Logout
+            </SidebarMenuButton>
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
