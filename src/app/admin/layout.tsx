@@ -1,0 +1,87 @@
+'use client';
+import {
+  LayoutDashboard,
+  LogOut,
+  Megaphone,
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+
+import Logo from '@/components/logo';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarInset,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem,
+  SidebarMenuSeparator,
+} from '@/components/ui/sidebar';
+import { PlaceHolderImages } from '@/lib/placeholder-images';
+
+const navItems = [
+  { href: '/admin/dashboard', icon: LayoutDashboard, label: 'Analytics' },
+  { href: '/admin/campaigns', icon: Megaphone, label: 'Campaigns' },
+];
+
+const adminProfile = {
+  name: 'Admin User',
+  email: 'admin@idonate.com',
+  avatarId: 'user-avatar-3'
+};
+
+export default function AdminLayout({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  const avatar = PlaceHolderImages.find((img) => img.id === adminProfile.avatarId);
+
+  return (
+    <>
+      <Sidebar>
+        <SidebarHeader>
+          <Logo />
+        </SidebarHeader>
+        <SidebarContent>
+            <p className="px-4 py-2 text-xs text-muted-foreground font-semibold">ADMIN PANEL</p>
+          <SidebarMenu>
+            {navItems.map((item) => (
+              <SidebarMenuItem key={item.label}>
+                <Link href={item.href} legacyBehavior passHref>
+                  <SidebarMenuButton
+                    isActive={pathname.startsWith(item.href)}
+                    icon={<item.icon />}
+                  >
+                    {item.label}
+                  </SidebarMenuButton>
+                </Link>
+              </SidebarMenuItem>
+            ))}
+          </SidebarMenu>
+        </SidebarContent>
+        <SidebarFooter className='gap-4'>
+            <SidebarMenuSeparator />
+             <div className="flex items-center gap-3 px-2">
+                <Avatar className="h-10 w-10">
+                    {avatar && <AvatarImage src={avatar.imageUrl} alt={adminProfile.name} data-ai-hint={avatar.imageHint} />}
+                    <AvatarFallback>{adminProfile.name.charAt(0)}</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                    <span className="font-semibold text-sm text-foreground">{adminProfile.name}</span>
+                    <span className="text-xs text-muted-foreground">{adminProfile.email}</span>
+                </div>
+            </div>
+            <Link href="/login" legacyBehavior passHref>
+                <SidebarMenuButton icon={<LogOut />}>
+                    Logout
+                </SidebarMenuButton>
+            </Link>
+        </SidebarFooter>
+      </Sidebar>
+      <SidebarInset>
+        <div className="p-4 sm:p-6 lg:p-8">{children}</div>
+      </SidebarInset>
+    </>
+  );
+}
