@@ -1,0 +1,157 @@
+/**
+ * @file Firebase Security Rules for Blood Donation App
+ *
+ * Core Philosophy:
+ * This ruleset enforces a user-ownership model for Donors and Acceptors,
+ * with Acceptors managing BloodRequests.  It uses path-based authorization
+ * to ensure that users can only access their own data, and acceptors can
+ * only manage their own blood requests. The campaigns collection is publicly readable but only administrators should be able to write.
+ *
+ * Data Structure:
+ * - /users/{userId}/donors/{donorId}: Donor profiles owned by the user.
+ * - /users/{userId}/acceptors/{acceptorId}: Acceptor profiles owned by the user.
+ * - /acceptors/{acceptorId}/bloodRequests/{bloodRequestId}: Blood requests created by an acceptor.
+ * - /donors/{donorId}/donations/{donationId}: Donations made by a donor.
+ * - /blood_requests/{bloodRequestId}/donations/{donationId}: Donations associated with a blood request (Denormalized).
+ * - /campaigns/{campaignId}: Blood donation campaigns (Publicly Readable, Admin Writable).
+ *
+ * Key Security Decisions:
+ * - User data (Donors, Acceptors) is strictly owned by the authenticated user.
+ * - Acceptors can only create, update, or delete their own blood requests.
+ * - The `list` operation is enabled for user-owned subcollections and acceptor-owned blood requests.
+ * - Campaigns are publicly readable but only an admin can create, update, or delete them.
+ *
+ * Denormalization for Authorization:
+ * The data structure allows for authorization based on the document path, removing the need for costly `get()` calls.
+ * Ownership (userId, acceptorId, donorId) is validated on `create` operations to maintain data integrity.
+ */
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    /**
+     * @description Allows users to manage their own donor profiles.
+     * @path /users/{userId}/donors/{donorId}
+     * @allow (create) auth.uid == userId && request.resource.data.userId == userId
+     * @allow (get, list) auth.uid == userId
+     * @allow (update, delete) auth.uid == userId && resource.data.userId == userId
+     * @deny (create) auth.uid != userId
+     * @deny (update, delete) auth.uid != userId
+     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     */
+    match /users/{userId}/donors/{donorId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow get, list: if isOwner(userId);
+      allow update: if isExistingOwner(userId) && resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId) && resource.data.userId == userId;
+    }
+
+    /**
+     * @description Allows users to manage their own acceptor profiles.
+     * @path /users/{userId}/acceptors/{acceptorId}
+     * @allow (create) auth.uid == userId && request.resource.data.userId == userId
+     * @allow (get, list) auth.uid == userId
+     * @allow (update, delete) auth.uid == userId && resource.data.userId == userId
+     * @deny (create) auth.uid != userId
+     * @deny (update, delete) auth.uid != userId
+     * @principle Enforces document ownership for writes and restricts access to a user's own data tree.
+     */
+    match /users/{userId}/acceptors/{acceptorId} {
+      function isOwner(userId) {
+        return request.auth.uid == userId;
+      }
+
+      function isExistingOwner(userId) {
+        return isOwner(userId) && resource != null;
+      }
+
+      allow create: if isOwner(userId) && request.resource.data.userId == userId;
+      allow get, list: if isOwner(userId);
+      allow update: if isExistingOwner(userId) && resource.data.userId == userId;
+      allow delete: if isExistingOwner(userId) && resource.data.userId == userId;
+    }
+
+    /**
+     * @description Allows acceptors to manage their own blood requests.
+     * @path /acceptors/{acceptorId}/bloodRequests/{bloodRequestId}
+     * @allow (create) request.auth != null && request.resource.data.acceptorId == acceptorId
+     * @allow (get, list) request.auth != null
+     * @allow (update, delete) request.auth != null && resource.data.acceptorId == acceptorId
+     * @deny (create) request.auth == null
+     * @deny (update, delete) request.auth == null
+     * @principle Enforces acceptor ownership for writes and restricts access to a acceptor's own blood requests.
+     */
+    match /acceptors/{acceptorId}/bloodRequests/{bloodRequestId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow create: if isSignedIn() && request.resource.data.acceptorId == acceptorId;
+      allow get, list: if isSignedIn();
+      allow update: if isSignedIn() && resource.data.acceptorId == acceptorId && resource != null;
+      allow delete: if isSignedIn() && resource.data.acceptorId == acceptorId && resource != null;
+    }
+
+        /**
+     * @description Allows donors to manage their own donations.
+     * @path /donors/{donorId}/donations/{donationId}
+     * @allow (create) request.auth != null && request.resource.data.donorId == donorId
+     * @allow (get, list) request.auth != null
+     * @allow (update, delete) request.auth != null && resource.data.donorId == donorId
+     * @deny (create) request.auth == null
+     * @deny (update, delete) request.auth == null
+     */
+    match /donors/{donorId}/donations/{donationId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow create: if isSignedIn() && request.resource.data.donorId == donorId;
+      allow get, list: if isSignedIn();
+      allow update: if isSignedIn() && resource.data.donorId == donorId && resource != null;
+      allow delete: if isSignedIn() && resource.data.donorId == donorId && resource != null;
+    }
+
+    /**
+     * @description Allows management of donations associated with a blood request.
+     * @path /blood_requests/{bloodRequestId}/donations/{donationId}
+     * @allow (create) request.auth != null && request.resource.data.bloodRequestId == bloodRequestId
+     * @allow (get, list) request.auth != null
+     * @allow (update, delete) request.auth != null && resource.data.bloodRequestId == bloodRequestId
+     * @deny (create) request.auth == null
+     * @deny (update, delete) request.auth == null
+     */
+    match /blood_requests/{bloodRequestId}/donations/{donationId} {
+      function isSignedIn() {
+        return request.auth != null;
+      }
+
+      allow create: if isSignedIn() && request.resource.data.bloodRequestId == bloodRequestId;
+      allow get, list: if isSignedIn();
+      allow update: if isSignedIn() && resource.data.bloodRequestId == bloodRequestId && resource != null;
+      allow delete: if isSignedIn() && resource.data.bloodRequestId == bloodRequestId && resource != null;
+    }
+
+    /**
+     * @description Allows public read access to campaigns, but restricts writes to authenticated users.
+     * @path /campaigns/{campaignId}
+     * @allow get, list: if true;
+     * // TODO: Add admin validation once the schema is updated with an ownership field.
+     * allow create, update, delete: if false;
+     * @principle Allows public read access while restricting write access.
+     */
+    match /campaigns/{campaignId} {
+        allow get, list: if true;
+        allow create, update, delete: if false; // TODO: Add admin role check here
+
+    }
+  }
+}

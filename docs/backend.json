@@ -1,0 +1,386 @@
+{
+  "entities": {
+    "Donor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Donor",
+      "type": "object",
+      "description": "Represents a blood donor.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the donor."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User authentication entity."
+        },
+        "firstName": {
+          "type": "string",
+          "description": "Donor's first name."
+        },
+        "lastName": {
+          "type": "string",
+          "description": "Donor's last name."
+        },
+        "email": {
+          "type": "string",
+          "description": "Donor's email address.",
+          "format": "email"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Donor's phone number."
+        },
+        "bloodGroup": {
+          "type": "string",
+          "description": "Donor's blood group (e.g., A+, O-)."
+        },
+        "eligibilityStatus": {
+          "type": "string",
+          "description": "Donor's eligibility status for donation."
+        },
+        "lastDonationDate": {
+          "type": "string",
+          "description": "Date of the donor's last donation.",
+          "format": "date-time"
+        },
+        "availability": {
+          "type": "boolean",
+          "description": "Indicates whether the donor is currently available for donation."
+        },
+        "contributionScore": {
+          "type": "number",
+          "description": "Donor's contribution score based on donations."
+        },
+        "donorLevel": {
+          "type": "string",
+          "description": "Donor's level in the gamified system."
+        }
+      },
+      "required": [
+        "id",
+        "firstName",
+        "lastName",
+        "email",
+        "bloodGroup",
+        "eligibilityStatus"
+      ]
+    },
+    "Acceptor": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Acceptor",
+      "type": "object",
+      "description": "Represents a hospital or verified entity requesting blood.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the acceptor."
+        },
+        "userId": {
+          "type": "string",
+          "description": "Reference to User authentication entity."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the hospital or accepting entity."
+        },
+        "email": {
+          "type": "string",
+          "description": "Acceptor's email address.",
+          "format": "email"
+        },
+        "phoneNumber": {
+          "type": "string",
+          "description": "Acceptor's phone number."
+        },
+        "address": {
+          "type": "string",
+          "description": "Acceptor's physical address."
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "Is the acceptor a verified entity?"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "email",
+        "address"
+      ]
+    },
+    "BloodRequest": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "BloodRequest",
+      "type": "object",
+      "description": "Represents a request for blood from an acceptor.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the blood request."
+        },
+        "acceptorId": {
+          "type": "string",
+          "description": "Reference to Acceptor. (Relationship: Acceptor 1:N BloodRequest)"
+        },
+        "bloodGroup": {
+          "type": "string",
+          "description": "Blood group requested (e.g., A+, O-)."
+        },
+        "unitsRequired": {
+          "type": "number",
+          "description": "Number of blood units required."
+        },
+        "urgency": {
+          "type": "string",
+          "description": "Urgency level of the request (e.g., high, medium, low)."
+        },
+        "location": {
+          "type": "string",
+          "description": "Location where the blood is needed."
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the blood request (pending, accepted, fulfilled)."
+        },
+        "requestDate": {
+          "type": "string",
+          "description": "Date and time when the request was submitted.",
+          "format": "date-time"
+        },
+        "donorIds": {
+          "type": "array",
+          "description": "References to Donors who have been matched to the request. (Relationship: Donor N:N BloodRequest)",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "acceptorId",
+        "bloodGroup",
+        "unitsRequired",
+        "urgency",
+        "location",
+        "status",
+        "requestDate"
+      ]
+    },
+    "Donation": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Donation",
+      "type": "object",
+      "description": "Represents a blood donation event.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the donation."
+        },
+        "donorId": {
+          "type": "string",
+          "description": "Reference to Donor. (Relationship: Donor 1:N Donation)"
+        },
+        "bloodRequestId": {
+          "type": "string",
+          "description": "Reference to BloodRequest. (Relationship: BloodRequest 1:N Donation)"
+        },
+        "donationDate": {
+          "type": "string",
+          "description": "Date and time of the donation.",
+          "format": "date-time"
+        },
+        "unitsDonated": {
+          "type": "number",
+          "description": "Number of blood units donated."
+        },
+        "donationCenter": {
+          "type": "string",
+          "description": "Name of the donation center."
+        }
+      },
+      "required": [
+        "id",
+        "donorId",
+        "bloodRequestId",
+        "donationDate",
+        "unitsDonated",
+        "donationCenter"
+      ]
+    },
+    "Campaign": {
+      "$schema": "http://json-schema.org/draft-07/schema#",
+      "title": "Campaign",
+      "type": "object",
+      "description": "Represents a blood donation campaign.",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier for the campaign."
+        },
+        "name": {
+          "type": "string",
+          "description": "Name of the campaign."
+        },
+        "description": {
+          "type": "string",
+          "description": "Description of the campaign."
+        },
+        "startDate": {
+          "type": "string",
+          "description": "Start date of the campaign.",
+          "format": "date-time"
+        },
+        "endDate": {
+          "type": "string",
+          "description": "End date of the campaign.",
+          "format": "date-time"
+        },
+        "targetBloodGroup": {
+          "type": "string",
+          "description": "Target blood group for the campaign."
+        },
+        "location": {
+          "type": "string",
+          "description": "Location of the campaign."
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "description",
+        "startDate",
+        "endDate",
+        "targetBloodGroup",
+        "location"
+      ]
+    }
+  },
+  "auth": {
+    "providers": [
+      "password",
+      "anonymous"
+    ]
+  },
+  "firestore": {
+    "structure": [
+      {
+        "path": "/users/{userId}/donors/{donorId}",
+        "definition": {
+          "entityName": "Donor",
+          "schema": {
+            "$ref": "#/backend/entities/Donor"
+          },
+          "description": "Stores donor profiles, owned by the user. The 'userId' parameter identifies the owner.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns this donor profile."
+            },
+            {
+              "name": "donorId",
+              "description": "The unique ID of the donor."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/users/{userId}/acceptors/{acceptorId}",
+        "definition": {
+          "entityName": "Acceptor",
+          "schema": {
+            "$ref": "#/backend/entities/Acceptor"
+          },
+          "description": "Stores acceptor profiles, owned by the user. The 'userId' parameter identifies the owner.",
+          "params": [
+            {
+              "name": "userId",
+              "description": "The ID of the user who owns this acceptor profile."
+            },
+            {
+              "name": "acceptorId",
+              "description": "The unique ID of the acceptor."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/acceptors/{acceptorId}/bloodRequests/{bloodRequestId}",
+        "definition": {
+          "entityName": "BloodRequest",
+          "schema": {
+            "$ref": "#/backend/entities/BloodRequest"
+          },
+          "description": "Stores blood requests associated with a specific acceptor.",
+          "params": [
+            {
+              "name": "acceptorId",
+              "description": "The ID of the acceptor who created this blood request."
+            },
+            {
+              "name": "bloodRequestId",
+              "description": "The unique ID of the blood request."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/donors/{donorId}/donations/{donationId}",
+        "definition": {
+          "entityName": "Donation",
+          "schema": {
+            "$ref": "#/backend/entities/Donation"
+          },
+          "description": "Stores donation records associated with a specific donor.",
+          "params": [
+            {
+              "name": "donorId",
+              "description": "The ID of the donor who made this donation."
+            },
+            {
+              "name": "donationId",
+              "description": "The unique ID of the donation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/blood_requests/{bloodRequestId}/donations/{donationId}",
+        "definition": {
+          "entityName": "Donation",
+          "schema": {
+            "$ref": "#/backend/entities/Donation"
+          },
+          "description": "Stores donation records associated with a specific blood request. This allows for querying donations related to a specific request. (Denormalized reference).",
+          "params": [
+            {
+              "name": "bloodRequestId",
+              "description": "The ID of the blood request that this donation fulfills."
+            },
+            {
+              "name": "donationId",
+              "description": "The unique ID of the donation."
+            }
+          ]
+        }
+      },
+      {
+        "path": "/campaigns/{campaignId}",
+        "definition": {
+          "entityName": "Campaign",
+          "schema": {
+            "$ref": "#/backend/entities/Campaign"
+          },
+          "description": "Stores information about blood donation campaigns.",
+          "params": [
+            {
+              "name": "campaignId",
+              "description": "The unique ID of the campaign."
+            }
+          ]
+        }
+      }
+    ],
+    "reasoning": "The Firestore structure is designed to ensure authorization independence and efficient data retrieval while adhering to the specified design principles. The core strategy revolves around denormalization and structural segregation to simplify security rules and optimize query performance.\n\n1.  **Authorization Independence:**\n    *   User-owned data (Donors, Acceptors) is stored under `/users/{userId}` to establish clear ownership, eliminating the need for complex `get()` calls to verify ownership.\n    *   The `BloodRequests` subcollection under `/acceptors/{acceptorId}` maintains a denormalized copy of relevant `Acceptor` data if needed for specific queries or rule conditions. However, given the ownership structure, security can primarily rely on the acceptor's `userId`.\n    *   The `donorIds` array within `BloodRequest` can be managed server-side or through carefully controlled client-side updates with validation to ensure proper authorization.\n\n2.  **Structural Segregation:**\n    *   Donor and Acceptor profiles are stored separately to reflect their distinct roles and access requirements.\n    *   `BloodRequests` are associated with `Acceptors` via subcollections, reflecting the `Acceptor 1:N BloodRequest` relationship.\n\n3.  **Access Modeling:**\n    *   Path-based ownership is used for Donors and Acceptors (`/users/{userId}/donors/{donorId}`, `/users/{userId}/acceptors/{acceptorId}`).\n    *   `BloodRequests` are organized under `Acceptors` to clearly define which acceptor initiated the request (`/acceptors/{acceptorId}/bloodRequests/{bloodRequestId}`).\n\n4.  **QAPs (Rules are not Filters):**\n    *   The structure enables secure `list` operations. Listing Donors/Acceptors is always scoped to a specific user (owner). Listing `BloodRequests` is scoped to a specific `Acceptor`.\n\n5.  **Invariants:**\n    *   Timestamps, ownership (userId, acceptorId, donorId), and potentially denormalized data can be validated using Firestore rules to maintain data integrity.\n"
+  }
+}
