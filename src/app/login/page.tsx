@@ -38,14 +38,20 @@ export default function LoginPage() {
 
   const handleLogin = async (role: 'donor' | 'acceptor' | 'admin') => {
     setLoading(true);
-    let email = '';
-    if (role === 'donor') {
-        email = (document.getElementById('donor-email') as HTMLInputElement).value;
-    } else if (role === 'acceptor' || role === 'admin') {
-        email = (document.getElementById('acceptor-email') as HTMLInputElement).value;
-    }
-    const password = 'password'; // Assuming 'password' for all test users.
+    let emailInput: HTMLInputElement | null = null;
+    let passwordInput: HTMLInputElement | null = null;
     
+    if (role === 'donor') {
+        emailInput = document.getElementById('donor-email') as HTMLInputElement;
+        passwordInput = document.getElementById('donor-password') as HTMLInputElement;
+    } else { // acceptor or admin
+        emailInput = document.getElementById('acceptor-email') as HTMLInputElement;
+        passwordInput = document.getElementById('acceptor-password') as HTMLInputElement;
+    }
+    
+    const email = emailInput.value;
+    const password = passwordInput.value;
+
     try {
         await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
@@ -64,7 +70,7 @@ export default function LoginPage() {
              toast({
                 variant: 'destructive',
                 title: 'Login Failed',
-                description: error.message,
+                description: "Invalid credentials. Please check email and password.",
             });
         }
     } finally {
@@ -133,11 +139,19 @@ export default function LoginPage() {
                   <Input id="acceptor-password" type="password" required defaultValue="password" />
                 </div>
                 <div className="flex gap-2">
-                  <Button onClick={() => handleLogin('acceptor')} type="button" className="w-full glow-accent" variant="secondary" disabled={loading}>
+                  <Button onClick={() => {
+                      const emailInput = document.getElementById('acceptor-email') as HTMLInputElement;
+                      if(emailInput) emailInput.value = "hospital@example.com";
+                      handleLogin('acceptor');
+                    }} type="button" className="w-full glow-accent" variant="secondary" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign in as Acceptor
                   </Button>
-                   <Button onClick={() => handleLogin('admin')} type="button" className="w-full" variant="outline" disabled={loading}>
+                   <Button onClick={() => {
+                       const emailInput = document.getElementById('acceptor-email') as HTMLInputElement;
+                       if(emailInput) emailInput.value = "admin@example.com";
+                       handleLogin('admin');
+                    }} type="button" className="w-full" variant="outline" disabled={loading}>
                     {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Sign in as Admin
                   </Button>
