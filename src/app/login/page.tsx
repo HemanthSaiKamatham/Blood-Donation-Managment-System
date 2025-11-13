@@ -14,6 +14,7 @@ import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'fire
 import { useEffect, useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
+import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,7 +37,7 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const handleLogin = async (role: 'donor' | 'acceptor' | 'admin') => {
+  const handleLogin = async (role: 'donor' | 'acceptor') => {
     setLoading(true);
     let emailInput: HTMLInputElement | null = null;
     let passwordInput: HTMLInputElement | null = null;
@@ -44,7 +45,7 @@ export default function LoginPage() {
     if (role === 'donor') {
         emailInput = document.getElementById('donor-email') as HTMLInputElement;
         passwordInput = document.getElementById('donor-password') as HTMLInputElement;
-    } else { // acceptor or admin
+    } else { // acceptor
         emailInput = document.getElementById('acceptor-email') as HTMLInputElement;
         passwordInput = document.getElementById('acceptor-password') as HTMLInputElement;
     }
@@ -110,7 +111,7 @@ export default function LoginPage() {
           <Tabs defaultValue="donor" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
               <TabsTrigger value="donor">Donor</TabsTrigger>
-              <TabsTrigger value="acceptor">Acceptor/Admin</TabsTrigger>
+              <TabsTrigger value="acceptor">Acceptor</TabsTrigger>
             </TabsList>
             <TabsContent value="donor" className="mt-4">
               <form onSubmit={(e) => { e.preventDefault(); handleLogin('donor'); }} className="space-y-4">
@@ -129,7 +130,7 @@ export default function LoginPage() {
               </form>
             </TabsContent>
             <TabsContent value="acceptor" className="mt-4">
-              <form onSubmit={(e) => e.preventDefault()} className="space-y-4">
+              <form onSubmit={(e) => { e.preventDefault(); handleLogin('acceptor'); }} className="space-y-4">
                  <div className="space-y-2">
                   <Label htmlFor="acceptor-email">Email</Label>
                   <Input id="acceptor-email" type="email" placeholder="hospital@example.com" required defaultValue="hospital@example.com" />
@@ -138,27 +139,19 @@ export default function LoginPage() {
                   <Label htmlFor="acceptor-password">Password</Label>
                   <Input id="acceptor-password" type="password" required defaultValue="password" />
                 </div>
-                <div className="flex gap-2">
-                  <Button onClick={() => {
-                      const emailInput = document.getElementById('acceptor-email') as HTMLInputElement;
-                      if(emailInput) emailInput.value = "hospital@example.com";
-                      handleLogin('acceptor');
-                    }} type="button" className="w-full glow-accent" variant="secondary" disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign in as Acceptor
-                  </Button>
-                   <Button onClick={() => {
-                       const emailInput = document.getElementById('acceptor-email') as HTMLInputElement;
-                       if(emailInput) emailInput.value = "admin@example.com";
-                       handleLogin('admin');
-                    }} type="button" className="w-full" variant="outline" disabled={loading}>
-                    {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                    Sign in as Admin
-                  </Button>
-                </div>
+                <Button type="submit" className="w-full glow-accent" variant="secondary" disabled={loading}>
+                  {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  Sign in as Acceptor
+                </Button>
               </form>
             </TabsContent>
           </Tabs>
+          <div className="mt-4 text-center text-sm">
+            Admin?{' '}
+            <Link href="/admin/login" className="underline">
+              Go to Admin Portal
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

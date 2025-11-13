@@ -46,7 +46,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   if (!user && !isUserLoading) {
-    router.push('/login');
+    router.push('/admin/login');
     return null;
   }
 
