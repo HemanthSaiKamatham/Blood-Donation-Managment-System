@@ -37,7 +37,7 @@ export default function LoginPage() {
     }
   }, [user, isUserLoading, router]);
 
-  const handleLogin = async (role: 'donor' | 'acceptor') => {
+  const handleAuth = async (role: 'donor' | 'acceptor') => {
     setLoading(true);
     let emailInput: HTMLInputElement | null = null;
     let passwordInput: HTMLInputElement | null = null;
@@ -54,24 +54,30 @@ export default function LoginPage() {
     const password = passwordInput.value;
 
     try {
-        await signInWithEmailAndPassword(auth, email, password);
+        // Try to create a new user first.
+        await createUserWithEmailAndPassword(auth, email, password);
+        // If successful, the onAuthStateChanged listener will redirect.
     } catch (error: any) {
-        if (error.code === 'auth/user-not-found') {
-            // If user does not exist, create them
+        // If the error is 'auth/email-already-in-use', it means the user exists.
+        // So, we can proceed to sign them in.
+        if (error.code === 'auth/email-already-in-use') {
             try {
-                await createUserWithEmailAndPassword(auth, email, password);
-            } catch (createError: any) {
+                await signInWithEmailAndPassword(auth, email, password);
+                // If successful, the onAuthStateChanged listener will redirect.
+            } catch (signInError: any) {
+                // This will catch errors like 'auth/wrong-password'.
                 toast({
                     variant: 'destructive',
-                    title: 'Registration Failed',
-                    description: createError.message,
+                    title: 'Login Failed',
+                    description: "Invalid credentials. Please check email and password.",
                 });
             }
         } else {
-             toast({
+            // Handle other registration errors (e.g., weak password).
+            toast({
                 variant: 'destructive',
-                title: 'Login Failed',
-                description: "Invalid credentials. Please check email and password.",
+                title: 'Registration Failed',
+                description: error.message,
             });
         }
     } finally {
@@ -105,7 +111,7 @@ export default function LoginPage() {
         <CardHeader className="text-center">
           <Logo className="mx-auto mb-4" />
           <CardTitle className="text-3xl font-bold">Welcome to iDonate</CardTitle>
-          <CardDescription>The future of blood donation. Sign in to continue.</CardDescription>
+          <CardDescription>The future of blood donation. Sign in or register to continue.</CardDescription>
         </CardHeader>
         <CardContent>
           <Tabs defaultValue="donor" className="w-full">
@@ -114,7 +120,7 @@ export default function LoginPage() {
               <TabsTrigger value="acceptor">Acceptor</TabsTrigger>
             </TabsList>
             <TabsContent value="donor" className="mt-4">
-              <form onSubmit={(e) => { e.preventDefault(); handleLogin('donor'); }} className="space-y-4">
+              <form onSubmit={(e) => { e.preventDefault(); handleAuth('donor'); }} className="space-y-4">
                 <div className="space-y-2">
                   <Label htmlFor="donor-email">Email</Label>
                   <Input id="donor-email" type="email" placeholder="donor@example.com" required defaultValue="donor@example.com" />
@@ -125,12 +131,12 @@ export default function LoginPage() {
                 </div>
                 <Button type="submit" className="w-full glow-primary" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign in as Donor
+                  Sign in / Register
                 </Button>
               </form>
             </TabsContent>
             <TabsContent value="acceptor" className="mt-4">
-              <form onSubmit={(e) => { e.preventDefault(); handleLogin('acceptor'); }} className="space-y-4">
+              <form onSubmit={(e) => { e.preventDefault(); handleAuth('acceptor'); }} className="space-y-4">
                  <div className="space-y-2">
                   <Label htmlFor="acceptor-email">Email</Label>
                   <Input id="acceptor-email" type="email" placeholder="hospital@example.com" required defaultValue="hospital@example.com" />
@@ -141,7 +147,7 @@ export default function LoginPage() {
                 </div>
                 <Button type="submit" className="w-full glow-accent" variant="secondary" disabled={loading}>
                   {loading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Sign in as Acceptor
+                  Sign in / Register
                 </Button>
               </form>
             </TabsContent>

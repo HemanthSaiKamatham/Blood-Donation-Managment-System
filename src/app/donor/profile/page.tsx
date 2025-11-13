@@ -33,6 +33,9 @@ const defaultProfile = {
   lastDonationDate: '',
   availability: true,
   eligibilityStatus: 'Eligible',
+  contributionScore: 0,
+  donorLevel: 'Newbie',
+  donationStreak: 0,
 };
 
 
@@ -43,8 +46,7 @@ export default function DonorProfilePage() {
 
   const donorDocRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
-    // This creates a document with the user's UID as the ID in the 'donors' collection
-    return doc(firestore, `donors/${user.uid}`);
+    return doc(firestore, `users/${user.uid}/donors/${user.uid}`);
   }, [firestore, user]);
   const { data: donorProfile, isLoading: isDonorLoading } = useDoc(donorDocRef);
   
@@ -53,11 +55,22 @@ export default function DonorProfilePage() {
   useEffect(() => {
     if (donorProfile) {
       setProfile(donorProfile);
-    } else if (user) {
-        // If there's no profile in Firestore, pre-fill with auth email
-        setProfile({ ...defaultProfile, email: user.email || '' });
+    } else if (user && !isDonorLoading) {
+        // If there's no profile in Firestore, pre-fill with auth email and save it.
+        const newProfile = { 
+          ...defaultProfile, 
+          email: user.email || '', 
+          userId: user.uid, 
+          id: user.uid,
+          firstName: user.displayName?.split(' ')[0] || '',
+          lastName: user.displayName?.split(' ')[1] || '',
+        };
+        setProfile(newProfile);
+        if(donorDocRef) {
+           setDocumentNonBlocking(donorDocRef, newProfile, { merge: true });
+        }
     }
-  }, [donorProfile, user]);
+  }, [donorProfile, user, isDonorLoading, donorDocRef]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -65,8 +78,9 @@ export default function DonorProfilePage() {
     
     const profileToSave = {
         ...profile,
-        id: user.uid, // Ensure the doc has an id field matching the user
-        email: user.email, // Always use the authenticated email
+        id: user.uid, 
+        userId: user.uid,
+        email: user.email,
     };
 
     setDocumentNonBlocking(donorDocRef, profileToSave, { merge: true });

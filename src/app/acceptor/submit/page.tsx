@@ -65,8 +65,8 @@ export default function SubmitRequestPage() {
     };
 
     try {
-        const requestsCollection = collection(firestore, 'bloodRequests');
-        addDocumentNonBlocking(requestsCollection, newRequest);
+        const requestsCollection = collection(firestore, `acceptors/${user.uid}/bloodRequests`);
+        await addDocumentNonBlocking(requestsCollection, newRequest);
 
         const aiInput = {
             bloodType: data.bloodGroup,

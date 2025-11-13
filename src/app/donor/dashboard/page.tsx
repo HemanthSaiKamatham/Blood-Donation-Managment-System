@@ -32,7 +32,7 @@ export default function DonorDashboardPage() {
 
   const donorDocRef = useMemoFirebase(() => {
     if (!user || !firestore) return null;
-    return doc(firestore, `donors/${user.uid}`);
+    return doc(firestore, `users/${user.uid}/donors/${user.uid}`);
   }, [firestore, user]);
   const { data: donorProfile, isLoading: isDonorLoading } = useDoc(donorDocRef);
   
@@ -46,14 +46,14 @@ export default function DonorDashboardPage() {
     return <div>Loading dashboard...</div>;
   }
   
-  const profile = donorProfile || { name: 'Donor', contributionScore: 0, donorLevel: 'Newbie', donationStreak: 0 };
+  const profile = donorProfile || { firstName: 'Donor', contributionScore: 0, donorLevel: 'Newbie', donationStreak: 0 };
 
 
   return (
     <div className="flex flex-col gap-8">
       <PageHeader
         title="Dashboard"
-        description={`Welcome back, ${profile.name}! Here's your impact.`}
+        description={`Welcome back, ${profile.firstName}! Here's your impact.`}
       />
       <main className="grid gap-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

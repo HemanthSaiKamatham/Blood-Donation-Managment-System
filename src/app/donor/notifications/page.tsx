@@ -20,7 +20,7 @@ export default function NotificationsPage() {
     const firestore = useFirestore();
     const donorDocRef = useMemoFirebase(() => {
         if (!user || !firestore) return null;
-        return doc(firestore, `donors/${user.uid}`);
+        return doc(firestore, `users/${user.uid}/donors/${user.uid}`);
     }, [firestore, user]);
     const { data: donorProfile } = useDoc(donorDocRef);
 

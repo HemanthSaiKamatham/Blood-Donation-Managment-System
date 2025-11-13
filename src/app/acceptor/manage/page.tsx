@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal } from 'lucide-react';
 import { useCollection, useFirestore, useMemoFirebase, useUser } from '@/firebase';
-import { collection, query, where } from 'firebase/firestore';
+import { collection, query } from 'firebase/firestore';
 
 const statusStyles: { [key: string]: string } = {
   Pending: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
@@ -21,7 +21,8 @@ export default function ManageRequestsPage() {
 
     const requestsQuery = useMemoFirebase(() => {
         if (!user || !firestore) return null;
-        return query(collection(firestore, 'bloodRequests'), where('acceptorId', '==', user.uid));
+        // Corrected path for blood requests
+        return query(collection(firestore, `acceptors/${user.uid}/bloodRequests`));
     }, [firestore, user]);
     
     const { data: bloodRequests, isLoading } = useCollection(requestsQuery);

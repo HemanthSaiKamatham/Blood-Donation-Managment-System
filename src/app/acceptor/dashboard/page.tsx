@@ -21,7 +21,8 @@ export default function AcceptorDashboardPage() {
 
     const requestsQuery = useMemoFirebase(() => {
         if (!user || !firestore) return null;
-        return query(collection(firestore, 'bloodRequests'), where('acceptorId', '==', user.uid));
+        // Corrected path for blood requests
+        return query(collection(firestore, `acceptors/${user.uid}/bloodRequests`));
     }, [firestore, user]);
     
     const { data: bloodRequests, isLoading } = useCollection(requestsQuery);
